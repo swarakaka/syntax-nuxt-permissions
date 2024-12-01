@@ -4,7 +4,7 @@ import type { Permissions, Roles } from '../types'
 
 export function useRoles() {
   const roles = useStorage<Roles>('roles', [])
-  
+
   return {
     roles,
     hasRole: (role: string | string[]) => {
@@ -21,7 +21,7 @@ export function useRoles() {
     },
     clearRoles: () => {
       roles.value = []
-    }
+    },
   }
 }
 
@@ -29,7 +29,7 @@ export function useRoles() {
 
 export function usePermissions() {
   const permissions = useStorage<Permissions>('permissions', {})
-  
+
   return {
     permissions,
     hasPermission: (permission: string | string[]) => {
@@ -47,6 +47,6 @@ export function usePermissions() {
     },
     clearPermissions: () => {
       permissions.value = {}
-    }
+    },
   }
 }

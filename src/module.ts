@@ -3,10 +3,10 @@ import { defineNuxtModule, addImports, addPlugin, createResolver } from '@nuxt/k
 import type { ModuleOptions } from './types'
 
 const defaults: ModuleOptions = {
-  redirectIfNotAllowed: '/', 
+  redirectIfNotAllowed: '/',
   fullAccessRoles: null,
   logPermissionChecks: false,
-  strictMode: false
+  strictMode: false,
 }
 
 export default defineNuxtModule<ModuleOptions>({
@@ -14,8 +14,8 @@ export default defineNuxtModule<ModuleOptions>({
     name: 'syntax-nuxt-permissions',
     configKey: 'syntaxNuxtPermissions',
     compatibility: {
-      nuxt: '^3.0.0'
-    }
+      nuxt: '^3.0.0',
+    },
   },
   // Default configuration options of the Nuxt module
   defaults,
@@ -31,19 +31,19 @@ export default defineNuxtModule<ModuleOptions>({
       {
         name: 'useRoles',
         as: 'useRoles',
-        from: resolver.resolve('runtime/composables')
+        from: resolver.resolve('runtime/composables'),
       },
       {
         name: 'usePermissions',
         as: 'usePermissions',
-        from: resolver.resolve('runtime/composables')
+        from: resolver.resolve('runtime/composables'),
       },
       // زیاد کردنی composable ی نوێ
       {
         name: 'usePermissionLogger',
         as: 'usePermissionLogger',
-        from: resolver.resolve('runtime/composables')
-      }
+        from: resolver.resolve('runtime/composables'),
+      },
     ])
 
     _nuxt.hook('app:resolve', () => {
@@ -58,10 +58,10 @@ function validateOptions(options: ModuleOptions): ModuleOptions {
   const validatedOptions = { ...defaults, ...options }
 
   // زیاد کردنی هەندێک پشکنین
-  if (validatedOptions.fullAccessRoles && 
-      !Array.isArray(validatedOptions.fullAccessRoles)) {
-    validatedOptions.fullAccessRoles = 
-      [validatedOptions.fullAccessRoles as string]
+  if (validatedOptions.fullAccessRoles
+    && !Array.isArray(validatedOptions.fullAccessRoles)) {
+    validatedOptions.fullAccessRoles
+      = [validatedOptions.fullAccessRoles as string]
   }
 
   // دڵنیا بوون لە جۆری ڕووت

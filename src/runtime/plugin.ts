@@ -1,5 +1,5 @@
 import type { ModuleOptions } from '../types'
-import { useLogger } from '../utils/logger'
+import { useLogger } from './utils/logger'
 import { useRoles, usePermissions } from './composables'
 import { defineNuxtPlugin, addRouteMiddleware, useRuntimeConfig } from '#app'
 

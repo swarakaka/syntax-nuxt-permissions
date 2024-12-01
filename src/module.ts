@@ -21,7 +21,7 @@ export default defineNuxtModule<ModuleOptions>({
   defaults,
   setup(_options, _nuxt) {
     const validatedOptions = validateOptions(_options)
-    _nuxt.options.runtimeConfig.public.nuxtPermissions = validatedOptions
+    _nuxt.options.runtimeConfig.public.syntaxNuxtPermissions = validatedOptions
     const resolver = createResolver(import.meta.url)
 
     // Do not add the extension since the `.ts` will be transpiled to `.mjs` after `npm run prepack`

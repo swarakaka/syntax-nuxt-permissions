@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { ModuleOptions } from '../types'
 import { useLogger } from './utils/logger'
 import { useRoles, usePermissions } from './composables'
-import { defineNuxtPlugin, addRouteMiddleware, useRuntimeConfig } from '#app'
+import { defineNuxtPlugin, addRouteMiddleware, useRuntimeConfig, refreshNuxtData } from '#app'
 
 export default defineNuxtPlugin((_nuxtApp) => {
   const config = useRuntimeConfig().public.nuxtPermissions as ModuleOptions

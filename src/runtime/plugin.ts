@@ -94,7 +94,7 @@ export default defineNuxtPlugin((_nuxtApp) => {
   }
 
   _nuxtApp.vueApp.directive('can', {
-    mounted(el, binding) {
+    mounted: async (el, binding) => {
       if (binding.arg === 'not') {
         if (hasPermission(binding.value)) {
           el.remove()
@@ -104,7 +104,7 @@ export default defineNuxtPlugin((_nuxtApp) => {
       else if (!hasPermission(binding.value)) {
         el.remove()
       }
-      refreshIdentity()
+      await refreshIdentity()
     },
   })
 
@@ -130,7 +130,7 @@ export default defineNuxtPlugin((_nuxtApp) => {
   }
 
   _nuxtApp.vueApp.directive('role', {
-    mounted(el, binding) {
+    mounted: async (el, binding) => {
       if (binding.arg === 'not') {
         if (hasRole(binding.value)) {
           el.remove()
@@ -140,7 +140,7 @@ export default defineNuxtPlugin((_nuxtApp) => {
       else if (!hasRole(binding.value)) {
         el.remove()
       }
-      refreshIdentity()
+      await refreshIdentity()
     },
   })
 

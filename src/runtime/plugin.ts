@@ -1,15 +1,16 @@
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 import type { ModuleOptions } from '../types'
 import { useLogger } from './utils/logger'
 import { useRoles, usePermissions } from './composables'
 import { defineNuxtPlugin, addRouteMiddleware, useRuntimeConfig } from '#app'
+import { useSanctumAuth } from '#imports'
 
 export default defineNuxtPlugin((_nuxtApp) => {
   const config = useRuntimeConfig().public.nuxtPermissions as ModuleOptions
   const logger = useLogger() // logging
   const { roles } = useRoles()
   const { permissions } = usePermissions()
-
+  const { refreshIdentity } = useSanctumAuth()
   const cachedPermissions = computed(() => {
     return permissions.value
   })
@@ -94,31 +95,16 @@ export default defineNuxtPlugin((_nuxtApp) => {
 
   _nuxtApp.vueApp.directive('can', {
     mounted(el, binding) {
-      const { reloadParent } = binding.value
-      const updateVisibilityByPermissions = () => {
-        if (binding.arg === 'not') {
-          if (hasPermission(binding.value)) {
-            el.remove()
-          }
-          return
-        }
-        else if (!hasPermission(binding.value)) {
+      if (binding.arg === 'not') {
+        if (hasPermission(binding.value)) {
           el.remove()
         }
+        return
       }
-      // Initial check
-      updateVisibilityByPermissions()
-
-      // Watch for changes in roles
-      watch(
-        () => cachedPermissions.value,
-        () => {
-          if (reloadParent && typeof reloadParent === 'function') {
-            reloadParent() // Trigger the parent reload
-          }
-        },
-        { deep: true }, // Ensure deep observation of roles
-      )
+      else if (!hasPermission(binding.value)) {
+        el.remove()
+      }
+      refreshIdentity()
     },
   })
 
@@ -145,31 +131,16 @@ export default defineNuxtPlugin((_nuxtApp) => {
 
   _nuxtApp.vueApp.directive('role', {
     mounted(el, binding) {
-      const { reloadParent } = binding.value
-      const updateVisibilityByRoles = () => {
-        if (binding.arg === 'not') {
-          if (hasRole(binding.value)) {
-            el.remove()
-          }
-          return
-        }
-        else if (!hasRole(binding.value)) {
+      if (binding.arg === 'not') {
+        if (hasRole(binding.value)) {
           el.remove()
         }
+        return
       }
-      // Initial check
-      updateVisibilityByRoles()
-
-      // Watch for changes in roles
-      watch(
-        () => cachedRoles.value,
-        () => {
-          if (reloadParent && typeof reloadParent === 'function') {
-            reloadParent() // Trigger the parent reload
-          }
-        },
-        { deep: true }, // Ensure deep observation of roles
-      )
+      else if (!hasRole(binding.value)) {
+        el.remove()
+      }
+      refreshIdentity()
     },
   })
 

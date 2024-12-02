@@ -1,6 +1,6 @@
 {
   "name": "syntax-nuxt-permissions",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "Nuxt 3 module for role and permission management",
   "repository": "swarakaka/syntax-nuxt-permissions",
   "license": "MIT",

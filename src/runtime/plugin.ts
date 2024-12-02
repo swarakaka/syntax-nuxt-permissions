@@ -1,9 +1,9 @@
 import { computed } from 'vue'
+import { useSanctumAuth } from 'nuxt-auth-sanctum'
 import type { ModuleOptions } from '../types'
 import { useLogger } from './utils/logger'
 import { useRoles, usePermissions } from './composables'
 import { defineNuxtPlugin, addRouteMiddleware, useRuntimeConfig } from '#app'
-import { useSanctumAuth } from '#imports'
 
 export default defineNuxtPlugin((_nuxtApp) => {
   const config = useRuntimeConfig().public.nuxtPermissions as ModuleOptions

@@ -94,6 +94,7 @@ export default defineNuxtPlugin((_nuxtApp) => {
 
   _nuxtApp.vueApp.directive('can', {
     mounted(el, binding) {
+      const { reloadParent } = binding.value
       const updateVisibilityByPermissions = () => {
         if (binding.arg === 'not') {
           if (hasPermission(binding.value)) {
@@ -112,8 +113,8 @@ export default defineNuxtPlugin((_nuxtApp) => {
       watch(
         () => cachedPermissions.value,
         () => {
-          if (document.body.contains(el)) {
-            updateVisibilityByPermissions()
+          if (reloadParent && typeof reloadParent === 'function') {
+            reloadParent() // Trigger the parent reload
           }
         },
         { deep: true }, // Ensure deep observation of roles
@@ -144,6 +145,7 @@ export default defineNuxtPlugin((_nuxtApp) => {
 
   _nuxtApp.vueApp.directive('role', {
     mounted(el, binding) {
+      const { reloadParent } = binding.value
       const updateVisibilityByRoles = () => {
         if (binding.arg === 'not') {
           if (hasRole(binding.value)) {
@@ -162,8 +164,8 @@ export default defineNuxtPlugin((_nuxtApp) => {
       watch(
         () => cachedRoles.value,
         () => {
-          if (document.body.contains(el)) {
-            updateVisibilityByRoles()
+          if (reloadParent && typeof reloadParent === 'function') {
+            reloadParent() // Trigger the parent reload
           }
         },
         { deep: true }, // Ensure deep observation of roles

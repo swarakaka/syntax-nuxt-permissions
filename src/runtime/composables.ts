@@ -1,23 +1,25 @@
 // composables/useRoles.ts
-import { useStorage } from '@vueuse/core'
-import type { Permissions, Roles } from '../types'
+import type { Permissions, Roles, UserInterface } from '../types'
 
 export function useRoles() {
-  const roles = useStorage<Roles>('roles', [])
+  const user = useSanctumUser<UserInterface>()
+  const roles = ref<Roles>([])
+
+  // Watch for changes in the auth user and update roles
+  watch(() => user.value, (newUser) => {
+    if (newUser?.roles) {
+      roles.value = newUser.roles
+    }
+    else {
+      roles.value = []
+    }
+  }, { immediate: true })
 
   return {
     roles,
     hasRole: (role: string | string[]) => {
       const checkRoles = Array.isArray(role) ? role : [role]
       return checkRoles.some(r => roles.value.includes(r))
-    },
-    addRole: (role: string) => {
-      if (!roles.value.includes(role)) {
-        roles.value.push(role)
-      }
-    },
-    removeRole: (role: string) => {
-      roles.value = roles.value.filter(r => r !== role)
     },
     clearRoles: () => {
       roles.value = []
@@ -28,22 +30,24 @@ export function useRoles() {
 // composables/usePermissions.ts
 
 export function usePermissions() {
-  const permissions = useStorage<Permissions>('permissions', {})
+  const user = useSanctumUser()
+  const permissions = ref<Permissions>({})
+
+  // Watch for changes in the auth user and update permissions
+  watch(() => user.value, (newUser) => {
+    if (newUser?.permissions) {
+      permissions.value = newUser.permissions
+    }
+    else {
+      permissions.value = {}
+    }
+  }, { immediate: true })
 
   return {
     permissions,
     hasPermission: (permission: string | string[]) => {
       const checkPermissions = Array.isArray(permission) ? permission : [permission]
       return checkPermissions.some(p => permissions.value[p] === true)
-    },
-    setPermissions: (newPermissions: Record<string, boolean>) => {
-      permissions.value = newPermissions
-    },
-    addPermission: (permission: string) => {
-      permissions.value[permission] = true
-    },
-    removePermission: (permission: string) => {
-      permissions.value[permission] = false
     },
     clearPermissions: () => {
       permissions.value = {}

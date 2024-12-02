@@ -1,8 +1,8 @@
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import type { ModuleOptions } from '../types'
 import { useLogger } from './utils/logger'
 import { useRoles, usePermissions } from './composables'
-import { defineNuxtPlugin, addRouteMiddleware, useRuntimeConfig, refreshNuxtData } from '#app'
+import { defineNuxtPlugin, addRouteMiddleware, useRuntimeConfig } from '#app'
 
 export default defineNuxtPlugin((_nuxtApp) => {
   const config = useRuntimeConfig().public.nuxtPermissions as ModuleOptions
@@ -93,18 +93,30 @@ export default defineNuxtPlugin((_nuxtApp) => {
   }
 
   _nuxtApp.vueApp.directive('can', {
-    mounted: async (el, binding) => {
-      if (binding.arg === 'not') {
-        if (hasPermission(binding.value)) {
+    mounted(el, binding) {
+      const updateVisibility = () => {
+        if (binding.arg === 'not') {
+          if (hasRole(binding.value)) {
+            el.remove()
+          }
+        }
+        else if (!hasRole(binding.value)) {
           el.remove()
         }
-        await refreshNuxtData()
-        return
       }
-      if (!hasPermission(binding.value)) {
-        el.remove()
-      }
-      await refreshNuxtData()
+      // Initial check
+      updateVisibility()
+
+      // Watch for changes in roles
+      watch(
+        () => cachedRoles.value,
+        () => {
+          if (document.body.contains(el)) {
+            updateVisibility()
+          }
+        },
+        { deep: true }, // Ensure deep observation of roles
+      )
     },
   })
 

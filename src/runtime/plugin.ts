@@ -94,25 +94,26 @@ export default defineNuxtPlugin((_nuxtApp) => {
 
   _nuxtApp.vueApp.directive('can', {
     mounted(el, binding) {
-      const updateVisibility = () => {
+      const updateVisibilityByPermissions = () => {
         if (binding.arg === 'not') {
-          if (hasRole(binding.value)) {
+          if (hasPermission(binding.value)) {
             el.remove()
           }
+          return
         }
-        else if (!hasRole(binding.value)) {
+        else if (!hasPermission(binding.value)) {
           el.remove()
         }
       }
       // Initial check
-      updateVisibility()
+      updateVisibilityByPermissions()
 
       // Watch for changes in roles
       watch(
-        () => cachedRoles.value,
+        () => cachedPermissions.value,
         () => {
           if (document.body.contains(el)) {
-            updateVisibility()
+            updateVisibilityByPermissions()
           }
         },
         { deep: true }, // Ensure deep observation of roles
@@ -143,15 +144,30 @@ export default defineNuxtPlugin((_nuxtApp) => {
 
   _nuxtApp.vueApp.directive('role', {
     mounted(el, binding) {
-      if (binding.arg === 'not') {
-        if (hasRole(binding.value)) {
+      const updateVisibilityByRoles = () => {
+        if (binding.arg === 'not') {
+          if (hasRole(binding.value)) {
+            el.remove()
+          }
+          return
+        }
+        else if (!hasRole(binding.value)) {
           el.remove()
         }
-        return
       }
-      if (!hasRole(binding.value)) {
-        el.remove()
-      }
+      // Initial check
+      updateVisibilityByRoles()
+
+      // Watch for changes in roles
+      watch(
+        () => cachedRoles.value,
+        () => {
+          if (document.body.contains(el)) {
+            updateVisibilityByRoles()
+          }
+        },
+        { deep: true }, // Ensure deep observation of roles
+      )
     },
   })
 

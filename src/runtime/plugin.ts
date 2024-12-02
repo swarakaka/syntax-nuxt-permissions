@@ -93,16 +93,18 @@ export default defineNuxtPlugin((_nuxtApp) => {
   }
 
   _nuxtApp.vueApp.directive('can', {
-    mounted(el, binding) {
+    mounted: async(el, binding) => {
       if (binding.arg === 'not') {
         if (hasPermission(binding.value)) {
           el.remove()
         }
+        await refreshNuxtData()
         return
       }
       if (!hasPermission(binding.value)) {
         el.remove()
       }
+      await refreshNuxtData()
     },
   })
 

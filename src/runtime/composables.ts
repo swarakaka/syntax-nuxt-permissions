@@ -1,5 +1,7 @@
 // composables/useRoles.ts
+import { ref, watch } from 'vue'
 import type { Permissions, Roles, UserInterface } from '../types'
+import { useSanctumUser } from '#imports'
 
 export function useRoles() {
   const user = useSanctumUser<UserInterface>()

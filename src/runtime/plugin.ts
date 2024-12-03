@@ -4,7 +4,7 @@ import { useLogger } from './utils/logger'
 import { useRoles, usePermissions } from './composables'
 import { defineNuxtPlugin, addRouteMiddleware, useRuntimeConfig } from '#app'
 
-export default defineNuxtPlugin((_nuxtApp) => {
+export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig().public.permissions as ModuleOptions
   const logger = useLogger()
   const { roles } = useRoles()
@@ -13,74 +13,99 @@ export default defineNuxtPlugin((_nuxtApp) => {
   const cachedPermissions = computed(() => permissions.value)
   const cachedRoles = computed(() => roles.value)
 
-  const createPermissionRoleObserver = () => {
-    const observerOptions = {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['data-roles', 'data-permissions'],
-    }
+  let permissionRoleObserver: MutationObserver | null = null
 
-    const mutationObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'childList') {
-          mutation.addedNodes.forEach((node) => {
-            if (node instanceof HTMLElement) {
-              checkElementPermissionsAndRoles(node)
-            }
-          })
-        }
-        else if (mutation.type === 'attributes') {
-          checkElementPermissionsAndRoles(mutation.target as HTMLElement)
-        }
-      })
+  // بەکارهێنانی onNuxtReady بۆ کۆدی client-side
+  if (process.env.client) {
+    nuxtApp.hook('app:mounted', () => {
+      initializeObserver()
     })
-
-    mutationObserver.observe(document.body, observerOptions)
-
-    return mutationObserver
   }
 
-  const checkElementPermissionsAndRoles = (element: HTMLElement) => {
-    const children = Array.from(element.querySelectorAll<HTMLElement>('[data-roles],[data-permissions]'))
+  function initializeObserver() {
+    const checkElementPermissionsAndRoles = (element: HTMLElement) => {
+      const children = Array.from(element.querySelectorAll<HTMLElement>('[data-roles],[data-permissions]'))
 
-    let shouldRemove = false
+      let shouldRemove = false
 
-    const rolesAttribute = element.getAttribute('data-roles')
-    if (rolesAttribute) {
-      const requiredRoles = rolesAttribute.split(',').map(role => role.trim())
-      if (!hasRole(requiredRoles)) {
-        shouldRemove = true
+      const rolesAttribute = element.getAttribute('data-roles')
+      if (rolesAttribute) {
+        const requiredRoles = rolesAttribute.split(',').map(role => role.trim())
+        if (!hasRole(requiredRoles)) {
+          shouldRemove = true
+        }
       }
-    }
 
-    const permissionsAttribute = element.getAttribute('data-permissions')
-    if (permissionsAttribute && !shouldRemove) {
-      const requiredPermissions = permissionsAttribute.split(',').map(perm => perm.trim())
-      if (!hasPermission(requiredPermissions)) {
-        shouldRemove = true
+      const permissionsAttribute = element.getAttribute('data-permissions')
+      if (permissionsAttribute && !shouldRemove) {
+        const requiredPermissions = permissionsAttribute.split(',').map(perm => perm.trim())
+        if (!hasPermission(requiredPermissions)) {
+          shouldRemove = true
+        }
       }
-    }
 
-    if (shouldRemove) {
+      if (shouldRemove) {
+        children.forEach(child => checkElementPermissionsAndRoles(child))
+        element.remove()
+        return
+      }
+
       children.forEach(child => checkElementPermissionsAndRoles(child))
-      element.remove()
-      return
     }
 
-    children.forEach(child => checkElementPermissionsAndRoles(child))
+    const createPermissionRoleObserver = () => {
+      const observerOptions = {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['data-roles', 'data-permissions'],
+      }
+
+      const mutationObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach((node) => {
+              if (node instanceof HTMLElement) {
+                checkElementPermissionsAndRoles(node)
+              }
+            })
+          }
+          else if (mutation.type === 'attributes') {
+            const element = mutation.target
+            if (element instanceof HTMLElement) {
+              checkElementPermissionsAndRoles(element)
+            }
+          }
+        })
+      })
+
+      mutationObserver.observe(document.body, observerOptions)
+      return mutationObserver
+    }
+
+    // چاودێریکردنی گۆڕانکارییەکان - تەنها لە client-side
+    watch([permissions, roles], () => {
+      requestAnimationFrame(() => {
+        const elements = document.querySelectorAll<HTMLElement>('[data-roles],[data-permissions]')
+        elements.forEach((element) => {
+          if (element.isConnected) {
+            checkElementPermissionsAndRoles(element)
+          }
+        })
+      })
+    }, { deep: true })
+
+    permissionRoleObserver = createPermissionRoleObserver()
   }
 
-  watch([permissions, roles], () => {
-    requestAnimationFrame(() => {
-      const elements = document.querySelectorAll<HTMLElement>('[data-roles],[data-permissions]')
-      elements.forEach((element) => {
-        if (element.isConnected) {
-          checkElementPermissionsAndRoles(element)
-        }
-      })
+  // پاککردنەوەی observer
+  if (import.meta.client) {
+    nuxtApp.hook('app:error', () => {
+      if (permissionRoleObserver) {
+        permissionRoleObserver.disconnect()
+      }
     })
-  }, { deep: true })
+  }
 
   function hasRole(requiredRoles: string | string[]) {
     const fullAccessRoles = typeof config.fullAccessRoles === 'string'
@@ -108,6 +133,7 @@ export default defineNuxtPlugin((_nuxtApp) => {
     )
   }
 
+  // میانگرەی ڕووت
   addRouteMiddleware('syntax-nuxt-permissions', (to, from) => {
     try {
       const routeRoles = to.meta?.roles as string | string[] | undefined
@@ -139,16 +165,6 @@ export default defineNuxtPlugin((_nuxtApp) => {
       logger.error('Middleware Error', error)
       return '/'
     }
-  })
-
-  let permissionRoleObserver: MutationObserver
-
-  _nuxtApp.hook('app:beforeMount', () => {
-    permissionRoleObserver = createPermissionRoleObserver()
-  })
-
-  _nuxtApp.hook('app:error', () => {
-    permissionRoleObserver.disconnect()
   })
 
   return {

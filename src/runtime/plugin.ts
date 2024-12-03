@@ -15,13 +15,9 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   let permissionRoleObserver: MutationObserver | null = null
 
-  // بەکارهێنانی onNuxtReady بۆ کۆدی client-side
-  if (process.env.client) {
-    nuxtApp.hook('app:mounted', () => {
-      initializeObserver()
-    })
-  }
-
+  nuxtApp.hook('app:mounted', () => {
+    initializeObserver()
+  })
   function initializeObserver() {
     const checkElementPermissionsAndRoles = (element: HTMLElement) => {
       const children = Array.from(element.querySelectorAll<HTMLElement>('[data-roles],[data-permissions]'))

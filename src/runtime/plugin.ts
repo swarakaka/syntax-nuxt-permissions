@@ -1,5 +1,4 @@
 import { computed } from 'vue'
-import { useSanctumAuth } from 'nuxt-auth-sanctum'
 import type { ModuleOptions } from '../types'
 import { useLogger } from './utils/logger'
 import { useRoles, usePermissions } from './composables'
@@ -10,7 +9,6 @@ export default defineNuxtPlugin((_nuxtApp) => {
   const logger = useLogger() // logging
   const { roles } = useRoles()
   const { permissions } = usePermissions()
-  const { refreshIdentity } = useSanctumAuth()
   const cachedPermissions = computed(() => {
     return permissions.value
   })
@@ -94,7 +92,7 @@ export default defineNuxtPlugin((_nuxtApp) => {
   }
 
   _nuxtApp.vueApp.directive('can', {
-    mounted: async (el, binding) => {
+    mounted(el, binding) {
       if (binding.arg === 'not') {
         if (hasPermission(binding.value)) {
           el.remove()
@@ -104,7 +102,6 @@ export default defineNuxtPlugin((_nuxtApp) => {
       else if (!hasPermission(binding.value)) {
         el.remove()
       }
-      await refreshIdentity()
     },
   })
 
@@ -130,7 +127,7 @@ export default defineNuxtPlugin((_nuxtApp) => {
   }
 
   _nuxtApp.vueApp.directive('role', {
-    mounted: async (el, binding) => {
+    mounted(el, binding) {
       if (binding.arg === 'not') {
         if (hasRole(binding.value)) {
           el.remove()
@@ -140,7 +137,6 @@ export default defineNuxtPlugin((_nuxtApp) => {
       else if (!hasRole(binding.value)) {
         el.remove()
       }
-      await refreshIdentity()
     },
   })
 

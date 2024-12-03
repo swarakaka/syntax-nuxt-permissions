@@ -25,13 +25,13 @@ export default defineNuxtPlugin((_nuxtApp) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'childList') {
           mutation.addedNodes.forEach((node) => {
-            if (node instanceof Element) {
+            if (node instanceof HTMLElement) {
               checkElementPermissionsAndRoles(node)
             }
           })
         }
         else if (mutation.type === 'attributes') {
-          checkElementPermissionsAndRoles(mutation.target as Element)
+          checkElementPermissionsAndRoles(mutation.target as HTMLElement)
         }
       })
     })
@@ -41,66 +41,48 @@ export default defineNuxtPlugin((_nuxtApp) => {
     return mutationObserver
   }
 
-  const removedElements = new Map<string, Element>()
-  const checkElementPermissionsAndRoles = (element: Element) => {
-    const elementId = element.getAttribute('id') || crypto.randomUUID()
+  const checkElementPermissionsAndRoles = (element: HTMLElement) => {
+    const children = Array.from(element.querySelectorAll<HTMLElement>('[data-roles],[data-permissions]'))
 
     const rolesAttribute = element.getAttribute('data-roles')
     if (rolesAttribute) {
       const requiredRoles = rolesAttribute.split(',').map(role => role.trim())
       if (!hasRole(requiredRoles)) {
-        // خەزنکردنی نوسخەی عونسرەکە پێش سڕینەوەی
-        if (!removedElements.has(elementId)) {
-          removedElements.set(elementId, element.cloneNode(true) as Element)
-        }
+        children.forEach(child => checkElementPermissionsAndRoles(child))
         element.remove()
         return
       }
     }
 
-    // پشکنینی ڕێگەپێدانەکان
     const permissionsAttribute = element.getAttribute('data-permissions')
     if (permissionsAttribute) {
       const requiredPermissions = permissionsAttribute.split(',').map(perm => perm.trim())
       if (!hasPermission(requiredPermissions)) {
-        // خەزنکردنی نوسخەی عونسرەکە پێش سڕینەوەی
-        if (!removedElements.has(elementId)) {
-          removedElements.set(elementId, element.cloneNode(true) as Element)
-        }
+        children.forEach(child => checkElementPermissionsAndRoles(child))
         element.remove()
         return
       }
     }
 
-    // پشکنینی منداڵەکان
-    element.querySelectorAll('[data-roles],[data-permissions]').forEach((childElement) => {
-      checkElementPermissionsAndRoles(childElement)
-    })
+    children.forEach(child => checkElementPermissionsAndRoles(child))
   }
 
   watch([permissions, roles], () => {
-    // گەڕانەوەی عەناسرە سڕاوەکان و پشکنینیان
-    removedElements.forEach((element) => {
-      const clonedElement = element.cloneNode(true) as Element
-      document.body.appendChild(clonedElement)
-      checkElementPermissionsAndRoles(clonedElement)
-    })
-
-    // پشکنینی عەناسرە هەنووکەییەکان
-    const currentElements: NodeListOf<Element> = document.querySelectorAll('[data-roles],[data-permissions]')
-    currentElements.forEach((element) => {
-      checkElementPermissionsAndRoles(element)
+    requestAnimationFrame(() => {
+      const elements = document.querySelectorAll<HTMLElement>('[data-roles],[data-permissions]')
+      elements.forEach((element) => {
+        if (element.isConnected) {
+          checkElementPermissionsAndRoles(element)
+        }
+      })
     })
   }, { deep: true })
 
-  // میتۆدی پشکنینی ڕۆڵ و ڕێگەپێدانەکان
   function hasRole(requiredRoles: string | string[]) {
-    // پشکنین بۆ ڕۆڵە سەرەکییەکان
     const fullAccessRoles = typeof config.fullAccessRoles === 'string'
       ? [config.fullAccessRoles]
       : config.fullAccessRoles
 
-    // بدایت یان ڕۆڵی سەرەکی هەبوو
     if (
       fullAccessRoles
       && fullAccessRoles.some(role => cachedRoles.value.includes(role))
@@ -108,7 +90,6 @@ export default defineNuxtPlugin((_nuxtApp) => {
       return true
     }
 
-    // پشکنینی ڕۆڵەکان
     const roles = typeof requiredRoles === 'string' ? [requiredRoles] : requiredRoles
     return roles.some(role => cachedRoles.value.includes(role))
   }
@@ -123,7 +104,6 @@ export default defineNuxtPlugin((_nuxtApp) => {
     )
   }
 
-  // میانگرەی ڕووت
   addRouteMiddleware('syntax-nuxt-permissions', (to, from) => {
     try {
       const routeRoles = to.meta?.roles as string | string[] | undefined
@@ -142,7 +122,6 @@ export default defineNuxtPlugin((_nuxtApp) => {
         requiredPermissions: routePermissions,
       })
 
-      // پشکنین بۆ redirectIfNotAllowed
       if (!config.redirectIfNotAllowed) {
         if (from.fullPath !== to.fullPath) {
           return from.fullPath
@@ -158,13 +137,12 @@ export default defineNuxtPlugin((_nuxtApp) => {
     }
   })
 
-  // دروستکردنی MutationObserver
   let permissionRoleObserver: MutationObserver
 
   _nuxtApp.hook('app:beforeMount', () => {
     permissionRoleObserver = createPermissionRoleObserver()
   })
-  // پاک کردنەوەی observer لە کاتی داخستنی بەرنامە
+
   _nuxtApp.hook('app:error', () => {
     permissionRoleObserver.disconnect()
   })

@@ -44,24 +44,28 @@ export default defineNuxtPlugin((_nuxtApp) => {
   const checkElementPermissionsAndRoles = (element: HTMLElement) => {
     const children = Array.from(element.querySelectorAll<HTMLElement>('[data-roles],[data-permissions]'))
 
+    let shouldRemove = false
+
     const rolesAttribute = element.getAttribute('data-roles')
     if (rolesAttribute) {
       const requiredRoles = rolesAttribute.split(',').map(role => role.trim())
       if (!hasRole(requiredRoles)) {
-        children.forEach(child => checkElementPermissionsAndRoles(child))
-        element.remove()
-        return
+        shouldRemove = true
       }
     }
 
     const permissionsAttribute = element.getAttribute('data-permissions')
-    if (permissionsAttribute) {
+    if (permissionsAttribute && !shouldRemove) {
       const requiredPermissions = permissionsAttribute.split(',').map(perm => perm.trim())
       if (!hasPermission(requiredPermissions)) {
-        children.forEach(child => checkElementPermissionsAndRoles(child))
-        element.remove()
-        return
+        shouldRemove = true
       }
+    }
+
+    if (shouldRemove) {
+      children.forEach(child => checkElementPermissionsAndRoles(child))
+      element.remove()
+      return
     }
 
     children.forEach(child => checkElementPermissionsAndRoles(child))

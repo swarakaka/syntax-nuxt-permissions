@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, type DirectiveBinding } from 'vue'
 import type { ModuleOptions } from '../types'
 import { useLogger } from './utils/logger'
 import { useRoles, usePermissions } from './composables'
@@ -90,19 +90,20 @@ export default defineNuxtPlugin((_nuxtApp) => {
     if (!binding) return true
     return !hasNotPermission(binding)
   }
-
-  _nuxtApp.vueApp.directive('can', {
-    mounted(el, binding) {
-      if (binding.arg === 'not') {
-        if (hasPermission(binding.value)) {
-          el.remove()
-        }
-        return
-      }
-      else if (!hasPermission(binding.value)) {
+  const handleVisibilityByPermissions = (el: HTMLElement, binding: DirectiveBinding<string>) => {
+    if (binding.arg === 'not') {
+      if (hasPermission(binding.value)) {
         el.remove()
       }
-    },
+      return
+    }
+    else if (!hasPermission(binding.value)) {
+      el.remove()
+    }
+  }
+  _nuxtApp.vueApp.directive('can', {
+    mounted: handleVisibilityByPermissions,
+    updated: handleVisibilityByPermissions,
   })
 
   function hasNotRole(binding: string | string[] | undefined) {
@@ -126,18 +127,20 @@ export default defineNuxtPlugin((_nuxtApp) => {
     return !hasNotRole(binding)
   }
 
-  _nuxtApp.vueApp.directive('role', {
-    mounted(el, binding) {
-      if (binding.arg === 'not') {
-        if (hasRole(binding.value)) {
-          el.remove()
-        }
-        return
-      }
-      else if (!hasRole(binding.value)) {
+  const handleVisibilityByRoles = (el: HTMLElement, binding: DirectiveBinding<string>) => {
+    if (binding.arg === 'not') {
+      if (hasRole(binding.value)) {
         el.remove()
       }
-    },
+      return
+    }
+    else if (!hasRole(binding.value)) {
+      el.remove()
+    }
+  }
+  _nuxtApp.vueApp.directive('role', {
+    mounted: handleVisibilityByRoles,
+    updated: handleVisibilityByRoles,
   })
 
   return {

@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import type { ModuleOptions } from '../types'
 import { useLogger } from './utils/logger'
 import { useRoles, usePermissions } from './composables'
@@ -41,13 +41,20 @@ export default defineNuxtPlugin((_nuxtApp) => {
     return mutationObserver
   }
 
+  const removedElements = new Map<string, Element>()
   const checkElementPermissionsAndRoles = (element: Element) => {
-    // پشکنینی ڕۆڵەکان
+    const elementId = element.getAttribute('id') || crypto.randomUUID()
+
     const rolesAttribute = element.getAttribute('data-roles')
     if (rolesAttribute) {
       const requiredRoles = rolesAttribute.split(',').map(role => role.trim())
       if (!hasRole(requiredRoles)) {
+        // خەزنکردنی نوسخەی عونسرەکە پێش سڕینەوەی
+        if (!removedElements.has(elementId)) {
+          removedElements.set(elementId, element.cloneNode(true) as Element)
+        }
         element.remove()
+        return
       }
     }
 
@@ -56,7 +63,12 @@ export default defineNuxtPlugin((_nuxtApp) => {
     if (permissionsAttribute) {
       const requiredPermissions = permissionsAttribute.split(',').map(perm => perm.trim())
       if (!hasPermission(requiredPermissions)) {
+        // خەزنکردنی نوسخەی عونسرەکە پێش سڕینەوەی
+        if (!removedElements.has(elementId)) {
+          removedElements.set(elementId, element.cloneNode(true) as Element)
+        }
         element.remove()
+        return
       }
     }
 
@@ -65,6 +77,21 @@ export default defineNuxtPlugin((_nuxtApp) => {
       checkElementPermissionsAndRoles(childElement)
     })
   }
+
+  watch([permissions, roles], () => {
+    // گەڕانەوەی عەناسرە سڕاوەکان و پشکنینیان
+    removedElements.forEach((element) => {
+      const clonedElement = element.cloneNode(true) as Element
+      document.body.appendChild(clonedElement)
+      checkElementPermissionsAndRoles(clonedElement)
+    })
+
+    // پشکنینی عەناسرە هەنووکەییەکان
+    const currentElements: NodeListOf<Element> = document.querySelectorAll('[data-roles],[data-permissions]')
+    currentElements.forEach((element) => {
+      checkElementPermissionsAndRoles(element)
+    })
+  }, { deep: true })
 
   // میتۆدی پشکنینی ڕۆڵ و ڕێگەپێدانەکان
   function hasRole(requiredRoles: string | string[]) {

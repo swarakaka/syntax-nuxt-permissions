@@ -5,7 +5,7 @@ import { useRoles, usePermissions } from './composables'
 import { defineNuxtPlugin, addRouteMiddleware, useRuntimeConfig } from '#app'
 
 export default defineNuxtPlugin((_nuxtApp) => {
-  const config = useRuntimeConfig().public.nuxtPermissions as ModuleOptions
+  const config = useRuntimeConfig().public.permissions as ModuleOptions
   const logger = useLogger()
   const { roles } = useRoles()
   const { permissions } = usePermissions()
